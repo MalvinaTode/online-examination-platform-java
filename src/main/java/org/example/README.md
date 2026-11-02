@@ -1,160 +1,212 @@
-Alegerea colectilor:
+# Online Examination Platform (Java)
 
-1)Am folosit ArrayList pt a stoca intrebarile fiecraui examen deoarece:
--Operatia addQuestion() se executa in O(1), intrebarile fiind adaugate doar la sfarsitul listei
--flexibilitatea la sortare:
-  --list_questions_history-sortare cronologica dupa data adaugarii, apoi alfabetic dupa autor
-  --print_exam: sortare duupa dificultate crescator,apoi alfabetic dupa text
+## Project Overview
 
--Am creeat copii ale listei si le am sortat folosind Collectios.sort() cu Comparator, fara a modifica lista originala, implemntare luata din lab10
--cand verific rasp in submitExam(), parcurg lista sortata, cu acces O1() la fiecare element prin index
+The Online Examination Platform is a Java application that manages exams, questions, students, submissions, and student scores. It supports multiple question types, automatic answer evaluation, time-restricted exam submissions, and report generation.
 
-2)Am fol HashMap pt a stoca examenle si studentii deoarece ma ajuta sa am un acces rapid la elemente pe baza unui identificator unic
-Accesul O1() este ideal pt eficientizare
-Implementarea HashMap am luat-o din Laboratorul10->pt studenti in Platform.java pt operatile:
- --add_question
- --submit_exam
- --show_student_score
- --generate_report
+## Data Structures and Design Decisions
 
-3)Am fol pt stocarea scorurilor studentilor tot HashMap in clasa Student cat si in Exam
-datorita complexitatii O(1),care ma ajuta sa am un acces rapid la scorul pt un anumit examen
-Aceasta eficientizeaza operatiile:addExamScore,getStudentScore,show_student_score
+### 1. ArrayList — Exam Questions
 
-Pentru generate_report ma ajuta deoarece, extrag cheile din HashMap, le sortez alfabetic fol Collections,sort(), parcurg lista sortata si afisez fiecare student + scorul sau
+`ArrayList` is used to store the questions associated with each exam.
 
-QUESTION SI CLASELE DERIVATE:
+**Reasons for choosing `ArrayList`:**
+- **Efficient insertion:** `addQuestion()` appends questions to the end of the list, with amortized \(O(1)\) time complexity.
+- **Flexible sorting:** Questions must be sorted according to different criteria:
+  - `list_questions_history`: chronological order by insertion date, followed by alphabetical order by author.
+  - `print_exam`: ascending order by difficulty, followed by alphabetical order by question text.
+- **Preserving the original list:** Copies of the question list are sorted using `Collections.sort()` and custom `Comparator` implementations, without modifying the original list. This approach was based on Laboratory 10.
+- **Efficient element access:** During `submitExam()`, the sorted list is traversed using indices, providing \(O(1)\) access to individual elements.
 
-clasa abstracta Question, implementata dupa laboratorul5 si laboratorul9, folosind genericitatea:
--permite metodei checkAnswer(T answer), sa accepte tipuri diferite de raspunsuri
--MultipleChoiceQuestion fol Question<ResponseOption>
--OpenEndedQuestion si FillInTheBlankQuestion folosesc Question<String>
+### 2. HashMap — Exams and Students
 
-Atributele clasei :
-text: textul intrebarii
-name: numele autorului care a adaugat intrebarea
-data: data la care s-a adaugat intrebarea
-maxScore: punctajul maxim asociat intrebarii
-difficulty: dificultatea intrebarii
+`HashMap` is used in `Platform` to store exams and students, allowing them to be retrieved using unique identifiers.
 
-Metode principale:
---checkAnswer(T answer): metoda abstracta (din Lab 5) care verifica corectitudinea unui raspuns
-Implementarea difera in functie de tipul intrebarii
---getGrade(Correctness correctness): metoda din interfata Gradable (Lab 5), returneaza procentul de punctaj in functie de corectitudine
+Average-case \(O(1)\) lookup makes this structure suitable for efficient access.
 
-Clasele derivate: OpenEndedQuestion, FillInTheBlankQuestion, MultipleChoiceQuestion:
+The implementation follows the concepts covered in Laboratory 10 and supports operations such as:
+- `add_question`
+- `submit_exam`
+- `show_student_score`
+- `generate_report`
 
-1) OpenEndedQuestion:
+### 3. HashMap — Student Scores
 
-Verifica raspunsul:
+`HashMap<String, Double>` is used to store exam scores in both the `Student` and `Exam` classes.
 
-CORRECT: daca raspunsul este exact egal cu raspunsul corect
-PARTIAL: daca lungimea raspunsului este in intervalul ±30% fata de raspunsul corect si unul contine pe celalalt ca substring
-WRONG: in rest
+This provides efficient average-case \(O(1)\) access to a student's score for a particular exam.
 
+The structure supports:
+- `addExamScore()`
+- `getStudentScore()`
+- `show_student_score`
 
-Punctaj:
+For `generate_report()`, the student identifiers are extracted from the map, sorted alphabetically using `Collections.sort()`, and traversed to display each student and their score.
 
-CORRECT: 100% (1.0)
-PARTIAL: 70% (0.7)
-WRONG: 0% (0.0)
+## Question Hierarchy
 
-2) FillInTheBlankQuestion:
+The abstract `Question<T>` class defines the common behavior of all question types. Its generic implementation follows the concepts covered in Laboratories 5 and 9.
 
-Verifica raspunsul:
+Generics allow `checkAnswer(T answer)` to accept different answer types:
+- `MultipleChoiceQuestion` extends `Question<ResponseOption>`.
+- `OpenEndedQuestion` extends `Question<String>`.
+- `FillInTheBlankQuestion` extends `Question<String>`.
 
-CORRECT: daca raspunsul este exact egal cu raspunsul corect
-PARTIAL: daca lungimea raspunsului este in intervalul ±2 litere fata de raspunsul corect si unul contine pe celalalt
-WRONG: in rest
+### Question Attributes
 
+Each question contains:
+- `text`: The question text.
+- `name`: The name of the author who added the question.
+- `date`: The date when the question was added.
+- `maxScore`: The maximum score assigned to the question.
+- `difficulty`: The question's difficulty level.
 
-Punctaj:
+### Main Methods
 
-CORRECT: 100% (1.0)
-PARTIAL: 50% (0.5)
-WRONG: 0% (0.0)
+- `checkAnswer(T answer)`: An abstract method that evaluates the correctness of a submitted answer. Its implementation depends on the question type.
+- `getGrade(Correctness correctness)`: A method defined by the `Gradable` interface (Laboratory 5) that returns the score percentage associated with a correctness level.
 
-3) MultipleChoiceQuestion:
+## Question Types and Grading Rules
 
-Raspunsul corect este de tip ResponseOption (enum: A, B, C, D)
-verif raspunsul:
+### 1. OpenEndedQuestion
 
-CORRECT: daca raspunsul este egal cu optiunea corecta
-WRONG: altfel
+Evaluates a free-text answer by comparing it with the expected answer.
 
+| Correctness | Evaluation rule | Score |
+|---|---|---:|
+| `CORRECT` | The submitted answer exactly matches the expected answer. | 100% (1.0) |
+| `PARTIAL` | The answer length is within ±30% of the expected answer's length, and one string contains the other as a substring. | 70% (0.7) |
+| `WRONG` | Neither of the above conditions is satisfied. | 0% (0.0) |
 
-Punctaj:
+### 2. FillInTheBlankQuestion
 
-CORRECT: 100% (1.0)
-WRONG: 0% (0.0)
+Evaluates an answer entered into a blank.
 
+| Correctness | Evaluation rule | Score |
+|---|---|---:|
+| `CORRECT` | The submitted answer exactly matches the expected answer. | 100% (1.0) |
+| `PARTIAL` | The answer length differs by at most two characters from the expected answer's length, and one string contains the other. | 50% (0.5) |
+| `WRONG` | Neither of the above conditions is satisfied. | 0% (0.0) |
 
-CLASA EXAM:
-Atribute:
+### 3. MultipleChoiceQuestion
 
--nume: numele examenului
--startDate: data de inceput a examenului
--endDate: data de final a examenului 
--questions: lista de intrebari (ArrayList<Question<?>> - implementare din Lab 10)
--scores: scorurile studentilor (HashMap<String, Double> - implementare din Lab 10)
+The expected answer is represented by the `ResponseOption` enum, which contains the options `A`, `B`, `C`, and `D`.
 
-Metode principale:
---addQuestion
-Aceasta metoda adauga o intrebare in lista de intrebari. Complexitate O(1)
+| Correctness | Evaluation rule | Score |
+|---|---|---:|
+| `CORRECT` | The submitted option matches the correct option. | 100% (1.0) |
+| `WRONG` | The submitted option does not match the correct option. | 0% (0.0) |
 
---getQuestionsHistory
-Sortare cu Collections.sort() dupa Laborator 10
-Aceasta metoda returneaza intrebarile sortate cronologic dupa data adaugarii, iar in caz de egalitate, alfabetic dupa numele autorului
+## Exam Class
 
---getPrintExam
-Sortare cu Collections.sort() dupa Laborator 10
-Aceasta metoda returneaza intrebarile sortate dupa dificultate crescator, iar in caz de egalitate, alfabetic dupa textul intrebarii
+The `Exam` class manages an exam's questions, time interval, and student scores.
 
---submitExam
-Aceasta metoda permite unui student sa dea examenul:
--verific daca se afla timestampul in intervalul de timp, daca nu setez scorul la ) si arunc exceptia
--folosesc getprintexam pt a obt lista sortata dupa dificultate
--apoi verific raspunsul folosind instanceof
--salvez scorul in HashMap
+### Attributes
 
---getStudentScore
-Returnez scorul unui student din HashMap
+- `name`: The exam name.
+- `startDate`: The exam start date and time.
+- `endDate`: The exam end date and time.
+- `questions`: An `ArrayList<Question<?>>` containing the exam questions.
+- `scores`: A `HashMap<String, Double>` mapping student identifiers to their scores.
 
+The collections follow the implementation concepts covered in Laboratory 10.
 
-CLASA STUDENT:
-Atribute:
+### Main Methods
 
--name: numele studentului
--group: grupa studentului
--examScores: scorurile la examene (HashMap<String, Double>)
+**`addQuestion()`**
 
-Metode:
---addExamScore
---getScoreForExam
-folosind HashMap, ajung sa eficientizez aceste metode
+Adds a question to the exam's question list. Appending to an `ArrayList` has amortized \(O(1)\) time complexity.
 
-CLASA PLATFORM:
-Atribute:
+**`getQuestionsHistory()`**
 
--exams: HashMap<String, Exam> cu toate examenele
--students: HashMap<String, Student> cu toti studentii
--testFolder: calea catre folderul de test
--fmt: format pentru timestamp-uri
+Returns the questions sorted chronologically by insertion date. If two questions have the same date, they are sorted alphabetically by author name.
 
-Metode principale:
---createExam
---addQuestion
---submitExam- gestionarea exceprilot cu blocuri try-catch, implemnetare luata din laboratorul7
---generateReport-sortare cu Collection.sort()
+The sorting is implemented using `Collections.sort()`, following Laboratory 10.
 
+**`getPrintExam()`**
 
-EXCEPTII IMPLEMENTATE:
-SubmissionOutsideTimeIntervalException-este aruncata cand un student incearca sa dea examen in afara intervalului de timp definit pentru examen
+Returns the questions sorted by ascending difficulty. If two questions have the same difficulty, they are sorted alphabetically by question text.
 
+The original question list is preserved.
 
-Cum functioneaza prelucrarea comenzilor
-Parsarea comenzilor in Main.java
+**`submitExam()`**
 
-1)Citesc linia din fisier si o impart in tokenuri
-2)Analizez comanda cu if-else
-3_inchid fisierele- implemenatrea fisierelor, am folosit sintaxa din Laborator7
+Processes a student's exam submission:
+1. Checks whether the submission timestamp falls within the exam's allowed time interval.
+2. If the submission is outside the interval, sets the score to zero and throws an exception.
+3. Uses `getPrintExam()` to obtain the questions sorted by difficulty.
+4. Evaluates the submitted answers using `instanceof` to identify the question type.
+5. Stores the resulting score in the `HashMap`.
+
+**`getStudentScore()`**
+
+Retrieves a student's score from the exam's score map.
+
+## Student Class
+
+The `Student` class stores student information and exam scores.
+
+### Attributes
+
+- `name`: The student's name.
+- `group`: The student's group.
+- `examScores`: A `HashMap<String, Double>` mapping exam identifiers to scores.
+
+### Main Methods
+
+- `addExamScore()`: Adds or updates a student's score for an exam.
+- `getScoreForExam()`: Retrieves the student's score for a specific exam.
+
+Using a `HashMap` provides efficient average-case access to exam scores.
+
+## Platform Class
+
+The `Platform` class coordinates exam management, student management, submissions, and report generation.
+
+### Attributes
+
+- `exams`: A `HashMap<String, Exam>` containing all exams.
+- `students`: A `HashMap<String, Student>` containing all students.
+- `testFolder`: The path to the test folder.
+- `fmt`: The timestamp formatting configuration.
+
+### Main Methods
+
+- `createExam()`: Creates an exam.
+- `addQuestion()`: Adds a question to an exam.
+- `submitExam()`: Handles exam submissions and manages exceptions using `try-catch` blocks, following the concepts covered in Laboratory 7.
+- `generateReport()`: Generates a student score report by sorting student identifiers alphabetically using `Collections.sort()` and displaying each student with their score.
+
+## Exception Handling
+
+### `SubmissionOutsideTimeIntervalException`
+
+A custom exception thrown when a student attempts to submit an exam outside its defined time interval.
+
+The exception is handled by the platform to ensure that submissions respect the exam's scheduling constraints.
+
+## Command Processing
+
+Commands are parsed and processed in `Main.java`.
+
+The implementation follows these steps:
+
+1. Reads a line from the input file.
+2. Splits the line into tokens.
+3. Identifies and processes the command using an `if-else` structure.
+4. Closes the files after processing.
+
+File handling follows the syntax and concepts covered in Laboratory 7.
+
+## Concepts and Techniques
+
+The project applies several Java programming concepts and techniques:
+
+- Object-oriented programming and inheritance.
+- Abstract classes and interfaces.
+- Generics and type-safe question handling.
+- Collections: `ArrayList` and `HashMap`.
+- Sorting with `Collections.sort()` and custom comparators.
+- Exception handling with `try-catch` blocks.
+- File input processing and command parsing.
+- Exam evaluation and score management.
